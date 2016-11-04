@@ -1,4 +1,5 @@
 <?php
+
 namespace Razorpay\EC2Metadata;
 
 /**
@@ -29,32 +30,32 @@ class Ec2MetadataGetter
      * @var array
      */
     private $commands = [
-            'AmiId' => 'ami-id',
-            'AmiLaunchIndex' => 'ami-launch-index',
-            'AmiManifestPath' => 'ami-manifest-path',
-            'AncestorAmiIds' => 'ancestor-ami-ids',
+            'AmiId'              => 'ami-id',
+            'AmiLaunchIndex'     => 'ami-launch-index',
+            'AmiManifestPath'    => 'ami-manifest-path',
+            'AncestorAmiIds'     => 'ancestor-ami-ids',
             'BlockDeviceMapping' => 'block-device-mapping',
-            'Hostname' => 'hostname',
-            'InstanceAction' => 'instance-action',
-            'InstanceId' => 'instance-id',
-            'InstanceType' => 'instance-type',
-            'KernelId' => 'kernel-id',
-            'LocalHostname' => 'local-hostname',
-            'LocalIpv4' => 'local-ipv4',
-            'Mac' => 'mac',
-            'Metrics' => 'metrics/vhostmd',
-            'Network' => 'network/interfaces/macs',
-            'Placement' => 'placement/availability-zone',
-            'ProductCodes' => 'product-codes',
-            'Profile' => 'profile',
-            'PublicHostname' => 'public-hostname',
-            'PublicIpv4' => 'public-ipv4',
-            'PublicKeys' => 'public-keys',
-            'RamdiskId' => 'ramdisk-id',
-            'ReservationId' => 'reservation-id',
-            'SecurityGroups' => 'security-groups',
-            'Services' => 'services/domain',
-            'UserData' => 'user-data'
+            'Hostname'           => 'hostname',
+            'InstanceAction'     => 'instance-action',
+            'InstanceId'         => 'instance-id',
+            'InstanceType'       => 'instance-type',
+            'KernelId'           => 'kernel-id',
+            'LocalHostname'      => 'local-hostname',
+            'LocalIpv4'          => 'local-ipv4',
+            'Mac'                => 'mac',
+            'Metrics'            => 'metrics/vhostmd',
+            'Network'            => 'network/interfaces/macs',
+            'Placement'          => 'placement/availability-zone',
+            'ProductCodes'       => 'product-codes',
+            'Profile'            => 'profile',
+            'PublicHostname'     => 'public-hostname',
+            'PublicIpv4'         => 'public-ipv4',
+            'PublicKeys'         => 'public-keys',
+            'RamdiskId'          => 'ramdisk-id',
+            'ReservationId'      => 'reservation-id',
+            'SecurityGroups'     => 'security-groups',
+            'Services'           => 'services/domain',
+            'UserData'           => 'user-data'
     ];
 
     /**
@@ -89,7 +90,7 @@ class Ec2MetadataGetter
         $this->cache_dir = $cache_dir;
 
         // Make sure that it is writeable
-        if(!is_writeable($this->cache_dir))
+        if (is_writeable($this->cache_dir) === false)
         {
             throw new \Exception("Cache directory not writable");
         }
@@ -126,7 +127,8 @@ class Ec2MetadataGetter
     private function readCache(array $attributes)
     {
         $filename = $this->getCacheFile($attributes);
-        if(is_readable($filename))
+
+        if (is_readable($filename))
         {
             return json_decode($filename);
         }
@@ -144,6 +146,7 @@ class Ec2MetadataGetter
     {
         $uniqueRequestId = $this->uniqueRequestId($attributes);
         $filename = $this->cache_dir . DIRECTORY_SEPARATOR . $uniqueRequestId . ".json";
+
         return $filename;
     }
 
@@ -157,6 +160,7 @@ class Ec2MetadataGetter
         // make array unique (order independent)
         // then serialize and hash it to generate a unique id
         sort($attributes, SORT_STRING);
+
         return sha1(serialize($attributes));
     }
 
@@ -171,11 +175,13 @@ class Ec2MetadataGetter
      */
     public function getBlockDeviceMapping()
     {
-
         $output = [];
-        foreach (explode(PHP_EOL, $this->get('BlockDeviceMapping')) as $map) {
+
+        foreach (explode(PHP_EOL, $this->get('BlockDeviceMapping')) as $map)
+        {
             $output[$map] = $this->get('BlockDeviceMapping', $map);
         }
+
         return $output;
     }
 
@@ -193,9 +199,10 @@ class Ec2MetadataGetter
      */
     public function getPublicKeys()
     {
-
         $keys = [];
-        foreach (explode(PHP_EOL, $this->get('PublicKeys')) as $publicKey) {
+
+        foreach (explode(PHP_EOL, $this->get('PublicKeys')) as $publicKey)
+        {
             list($index, $keyname) = explode('=', $publicKey, 2);
             $format = $this->get('PublicKeys', $index);
 
@@ -227,14 +234,18 @@ class Ec2MetadataGetter
      */
     public function getNetwork()
     {
-
         $macList = explode(PHP_EOL, $this->get('Network'));
         $network = [];
-        foreach ($macList as $mac) {
+
+        foreach ($macList as $mac)
+        {
             $interfaces = [];
-            foreach (explode(PHP_EOL, $this->get('Network', $mac)) as $key) {
+
+            foreach (explode(PHP_EOL, $this->get('Network', $mac)) as $key)
+            {
                 $interfaces[$key] = $this->get('Network', sprintf("%s/%s", $mac, $key));
             }
+
             $network[$mac] = $interfaces;
         }
 
@@ -248,16 +259,17 @@ class Ec2MetadataGetter
      */
     public function getAll()
     {
-
         $cacheData = $this->readCache(array_keys($this->commands));
 
-        if($cacheData)
+        if ($cacheData)
         {
             return $cacheData;
         }
 
         $result = [];
-        foreach (array_keys($this->commands) as $commandName) {
+
+        foreach (array_keys($this->commands) as $commandName)
+        {
             $result[$commandName] = $this->{"get$commandName"}();
         }
 
@@ -277,13 +289,16 @@ class Ec2MetadataGetter
         /**
          * We may fake being on EC2
          */
-        if($this->dummy)
+        if ($this->dummy)
         {
             return true;
         }
 
-        if (!@file_get_contents($this->getLatestInstanceDataPath(), false, $this->getStreamContext(), 1, 1)) {
-            throw new \RuntimeException("[ERROR] Command not valid outside EC2 instance. Please run this command within a running EC2 instance or call allowDummy()");
+        if (!@file_get_contents($this->getLatestInstanceDataPath(), false, $this->getStreamContext(), 1, 1))
+        {
+            throw new \RuntimeException(
+                "[ERROR] Command not valid outside EC2 instance. " .
+                "Please run this command within a running EC2 instance or call allowDummy()");
         }
 
         return true;
@@ -301,12 +316,13 @@ class Ec2MetadataGetter
      */
     public function get($commandName, $args = '')
     {
-
         $this->isRunningOnEc2();
-        if($this->dummy)
+
+        if ($this->dummy)
         {
             $command = $this->commands[$commandName];
             $dummy = new Mock\VirtualEc2MetadataGetter(Mock\DummyMetadata::$dummyMetadata);
+
             return $dummy->get($commandName, $args);
         }
         else
@@ -322,16 +338,18 @@ class Ec2MetadataGetter
      * @return array response
      */
 
-    public function getMultiple(array $attributes){
+    public function getMultiple(array $attributes)
+    {
         $cacheData = $this->readCache(array_keys($attributes));
 
-        if($cacheData)
+        if ($cacheData)
         {
             return $cacheData;
         }
 
         $response = [];
-        foreach($attributes as $attribute)
+
+        foreach ($attributes as $attribute)
         {
             $response[$attribute] = $this->{"get$attribute"}();
         }
@@ -350,11 +368,19 @@ class Ec2MetadataGetter
      */
     private function getFullPath($commandName, $args)
     {
-
-        if ($commandName === 'UserData') {
-            return sprintf("%s/%s", $this->getLatestInstanceDataPath(), $this->commands['UserData']);
+        if ($commandName === 'UserData')
+        {
+            return sprintf(
+                "%s/%s",
+                $this->getLatestInstanceDataPath(),
+                $this->commands['UserData']);
         }
-        return sprintf("%s/%s/%s/%s", $this->getLatestInstanceDataPath(), self::METADATA, $this->commands[$commandName], $args);
+
+        return sprintf(
+            "%s/%s/%s/%s",
+            $this->getLatestInstanceDataPath(),
+            self::METADATA,
+            $this->commands[$commandName], $args);
     }
 
     /**
@@ -364,7 +390,6 @@ class Ec2MetadataGetter
      */
     private function getLatestInstanceDataPath()
     {
-
         return sprintf("%s://%s/latest", $this->scheme, $this->hostname);
     }
 
@@ -375,12 +400,9 @@ class Ec2MetadataGetter
      */
     private function getStreamContext()
     {
+        $context = ['http' => ['timeout' => self::HTTP_TIMEOUT]];
 
-        return stream_context_create([
-                'http' => [
-                        'timeout' => self::HTTP_TIMEOUT
-                ]
-        ]);
+        return stream_context_create($context);
     }
 
     /**
@@ -395,12 +417,13 @@ class Ec2MetadataGetter
      */
     public function __call($functionName, $args)
     {
-
         $command = preg_replace('/^get/', '', $functionName);
-        if (!array_key_exists($command, $this->commands)) {
+
+        if (array_key_exists($command, $this->commands) === false)
+        {
             throw new \LogicException("Only get operations allowed.");
         }
+
         return $this->get($command, array_pop($args));
     }
-
 }

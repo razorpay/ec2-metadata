@@ -110,7 +110,7 @@ class Ec2MetadataGetter
      * @param  array $response   combined response of the API
      * @return string $filename filename to which the response was cached to
      */
-    private function writeCache($attributes, $response)
+    private function writeCache($attributes, array $response)
     {
         $filename = $this->getCacheFile($attributes);
         $data = json_encode($response);
@@ -279,7 +279,13 @@ class Ec2MetadataGetter
             return true;
         }
 
-        if (!@file_get_contents($this->getLatestInstanceDataPath(), false, $this->getStreamContext(), 1, 1))
+        try
+        {
+            $res = file_get_contents($this->getLatestInstanceDataPath(), false, $this->getStreamContext());
+
+            assert($res !== false);
+        }
+        catch(\Exception $e)
         {
             throw new \RuntimeException(
                 "[ERROR] Command not valid outside EC2 instance. " .
@@ -312,7 +318,16 @@ class Ec2MetadataGetter
         }
         else
         {
-            return @file_get_contents($this->getFullPath($commandName, $args), false, $this->getStreamContext());
+            $path = $this->getFullPath($commandName, $args);
+
+            try
+            {
+                return file_get_contents($path, false, $this->getStreamContext());
+            }
+            catch(\Exception $e)
+            {
+                return false;
+            }
         }
     }
 
@@ -385,7 +400,11 @@ class Ec2MetadataGetter
      */
     private function getStreamContext()
     {
-        $context = ['http' => ['timeout' => self::HTTP_TIMEOUT]];
+        $context = [
+            'http' => [
+                'timeout' => self::HTTP_TIMEOUT
+            ]
+        ];
 
         return stream_context_create($context);
     }

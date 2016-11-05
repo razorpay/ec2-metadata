@@ -42,6 +42,8 @@ class AllCommandsTest extends \PHPUnit_Framework_TestCase
 
     /**
      * @test
+     * There is no mock for this test, and it acts as a test
+     * against any missing resources as well.
      */
     public function getAncestorAmiIdsTest()
     {

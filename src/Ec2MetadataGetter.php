@@ -30,32 +30,28 @@ class Ec2MetadataGetter
      * @var array
      */
     private $commands = [
-            'AmiId'              => 'ami-id',
-            'AmiLaunchIndex'     => 'ami-launch-index',
-            'AmiManifestPath'    => 'ami-manifest-path',
-            'AncestorAmiIds'     => 'ancestor-ami-ids',
-            'BlockDeviceMapping' => 'block-device-mapping',
-            'Hostname'           => 'hostname',
-            'InstanceAction'     => 'instance-action',
-            'InstanceId'         => 'instance-id',
-            'InstanceType'       => 'instance-type',
-            'KernelId'           => 'kernel-id',
-            'LocalHostname'      => 'local-hostname',
-            'LocalIpv4'          => 'local-ipv4',
-            'Mac'                => 'mac',
-            'Metrics'            => 'metrics/vhostmd',
-            'Network'            => 'network/interfaces/macs',
-            'Placement'          => 'placement/availability-zone',
-            'ProductCodes'       => 'product-codes',
-            'Profile'            => 'profile',
-            'PublicHostname'     => 'public-hostname',
-            'PublicIpv4'         => 'public-ipv4',
-            'PublicKeys'         => 'public-keys',
-            'RamdiskId'          => 'ramdisk-id',
-            'ReservationId'      => 'reservation-id',
-            'SecurityGroups'     => 'security-groups',
-            'Services'           => 'services/domain',
-            'UserData'           => 'user-data'
+        'AmiId'              => 'ami-id',
+        'AmiLaunchIndex'     => 'ami-launch-index',
+        'AmiManifestPath'    => 'ami-manifest-path',
+        'BlockDeviceMapping' => 'block-device-mapping',
+        'Hostname'           => 'hostname',
+        'InstanceAction'     => 'instance-action',
+        'InstanceId'         => 'instance-id',
+        'InstanceType'       => 'instance-type',
+        'LocalHostname'      => 'local-hostname',
+        'LocalIpv4'          => 'local-ipv4',
+        'Mac'                => 'mac',
+        'Metrics'            => 'metrics/vhostmd',
+        'Network'            => 'network/interfaces/macs',
+        'Placement'          => 'placement/availability-zone',
+        'Profile'            => 'profile',
+        'PublicHostname'     => 'public-hostname',
+        'PublicIpv4'         => 'public-ipv4',
+        'RamdiskId'          => 'ramdisk-id',
+        'ReservationId'      => 'reservation-id',
+        'SecurityGroups'     => 'security-groups',
+        'Services'           => 'services/domain',
+        'UserData'           => 'user-data'
     ];
 
     /**
@@ -130,11 +126,10 @@ class Ec2MetadataGetter
 
         if (is_readable($filename))
         {
-            return json_decode($filename);
+            return json_decode(file_get_contents($filename));
         }
 
         return false;
-
     }
 
     /**
@@ -340,7 +335,7 @@ class Ec2MetadataGetter
 
     public function getMultiple(array $attributes)
     {
-        $cacheData = $this->readCache(array_keys($attributes));
+        $cacheData = $this->readCache($attributes);
 
         if ($cacheData)
         {

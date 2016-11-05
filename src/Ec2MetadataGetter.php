@@ -30,32 +30,32 @@ class Ec2MetadataGetter
      * @var array
      */
     private $commands = [
-            'AmiId'              => 'ami-id',
-            'AmiLaunchIndex'     => 'ami-launch-index',
-            'AmiManifestPath'    => 'ami-manifest-path',
-            'AncestorAmiIds'     => 'ancestor-ami-ids',
-            'BlockDeviceMapping' => 'block-device-mapping',
-            'Hostname'           => 'hostname',
-            'InstanceAction'     => 'instance-action',
-            'InstanceId'         => 'instance-id',
-            'InstanceType'       => 'instance-type',
-            'KernelId'           => 'kernel-id',
-            'LocalHostname'      => 'local-hostname',
-            'LocalIpv4'          => 'local-ipv4',
-            'Mac'                => 'mac',
-            'Metrics'            => 'metrics/vhostmd',
-            'Network'            => 'network/interfaces/macs',
-            'Placement'          => 'placement/availability-zone',
-            'ProductCodes'       => 'product-codes',
-            'Profile'            => 'profile',
-            'PublicHostname'     => 'public-hostname',
-            'PublicIpv4'         => 'public-ipv4',
-            'PublicKeys'         => 'public-keys',
-            'RamdiskId'          => 'ramdisk-id',
-            'ReservationId'      => 'reservation-id',
-            'SecurityGroups'     => 'security-groups',
-            'Services'           => 'services/domain',
-            'UserData'           => 'user-data'
+        'AmiId'              => 'ami-id',
+        'AmiLaunchIndex'     => 'ami-launch-index',
+        'AmiManifestPath'    => 'ami-manifest-path',
+        'AncestorAmiIds'     => 'ancestor-ami-ids',
+        'BlockDeviceMapping' => 'block-device-mapping',
+        'Hostname'           => 'hostname',
+        'InstanceAction'     => 'instance-action',
+        'InstanceId'         => 'instance-id',
+        'InstanceType'       => 'instance-type',
+        'KernelId'           => 'kernel-id',
+        'LocalHostname'      => 'local-hostname',
+        'LocalIpv4'          => 'local-ipv4',
+        'Mac'                => 'mac',
+        'Metrics'            => 'metrics/vhostmd',
+        'Network'            => 'network/interfaces/macs',
+        'Placement'          => 'placement/availability-zone',
+        'ProductCodes'       => 'product-codes',
+        'Profile'            => 'profile',
+        'PublicHostname'     => 'public-hostname',
+        'PublicIpv4'         => 'public-ipv4',
+        'PublicKeys'         => 'public-keys',
+        'RamdiskId'          => 'ramdisk-id',
+        'ReservationId'      => 'reservation-id',
+        'SecurityGroups'     => 'security-groups',
+        'Services'           => 'services/domain',
+        'UserData'           => 'user-data'
     ];
 
     /**
@@ -110,7 +110,7 @@ class Ec2MetadataGetter
      * @param  array $response   combined response of the API
      * @return string $filename filename to which the response was cached to
      */
-    private function writeCache($attributes, $response)
+    private function writeCache($attributes, array $response)
     {
         $filename = $this->getCacheFile($attributes);
         $data = json_encode($response);
@@ -130,11 +130,10 @@ class Ec2MetadataGetter
 
         if (is_readable($filename))
         {
-            return json_decode($filename);
+            return json_decode(file_get_contents($filename), true);
         }
 
         return false;
-
     }
 
     /**
@@ -259,23 +258,9 @@ class Ec2MetadataGetter
      */
     public function getAll()
     {
-        $cacheData = $this->readCache(array_keys($this->commands));
+        $attributes = array_keys($this->commands);
 
-        if ($cacheData)
-        {
-            return $cacheData;
-        }
-
-        $result = [];
-
-        foreach (array_keys($this->commands) as $commandName)
-        {
-            $result[$commandName] = $this->{"get$commandName"}();
-        }
-
-        $this->writeCache($this->commands, $result);
-
-        return $result;
+        return $this->getMultiple($attributes);
     }
 
     /**
@@ -294,7 +279,13 @@ class Ec2MetadataGetter
             return true;
         }
 
-        if (!@file_get_contents($this->getLatestInstanceDataPath(), false, $this->getStreamContext(), 1, 1))
+        try
+        {
+            $res = file_get_contents($this->getLatestInstanceDataPath(), false, $this->getStreamContext());
+
+            assert($res !== false);
+        }
+        catch(\Exception $e)
         {
             throw new \RuntimeException(
                 "[ERROR] Command not valid outside EC2 instance. " .
@@ -327,7 +318,16 @@ class Ec2MetadataGetter
         }
         else
         {
-            return @file_get_contents($this->getFullPath($commandName, $args), false, $this->getStreamContext());
+            $path = $this->getFullPath($commandName, $args);
+
+            try
+            {
+                return file_get_contents($path, false, $this->getStreamContext());
+            }
+            catch(\Exception $e)
+            {
+                return false;
+            }
         }
     }
 
@@ -340,7 +340,7 @@ class Ec2MetadataGetter
 
     public function getMultiple(array $attributes)
     {
-        $cacheData = $this->readCache(array_keys($attributes));
+        $cacheData = $this->readCache($attributes);
 
         if ($cacheData)
         {
@@ -400,7 +400,11 @@ class Ec2MetadataGetter
      */
     private function getStreamContext()
     {
-        $context = ['http' => ['timeout' => self::HTTP_TIMEOUT]];
+        $context = [
+            'http' => [
+                'timeout' => self::HTTP_TIMEOUT
+            ]
+        ];
 
         return stream_context_create($context);
     }

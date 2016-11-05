@@ -130,7 +130,7 @@ class Ec2MetadataGetter
 
         if (is_readable($filename))
         {
-            return json_decode(file_get_contents($filename));
+            return json_decode(file_get_contents($filename), true);
         }
 
         return false;
@@ -258,23 +258,9 @@ class Ec2MetadataGetter
      */
     public function getAll()
     {
-        $cacheData = $this->readCache(array_keys($this->commands));
+        $attributes = array_keys($this->commands);
 
-        if ($cacheData)
-        {
-            return $cacheData;
-        }
-
-        $result = [];
-
-        foreach (array_keys($this->commands) as $commandName)
-        {
-            $result[$commandName] = $this->{"get$commandName"}();
-        }
-
-        $this->writeCache($this->commands, $result);
-
-        return $result;
+        return $this->getMultiple($attributes);
     }
 
     /**

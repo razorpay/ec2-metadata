@@ -3,11 +3,11 @@
    "description":"This tool is a rewrite of the EC2 Instance Metadata API for PHP.",
    "require":{
       "php":">=5.4.0",
-      "mikey179/vfsStream": "1.3.*"
+      "mikey179/vfsstream": "^1.6.11"
    },
    "license":"MIT",
    "require-dev":{
-      "phpunit/phpunit":"3.7.*",
+      "phpunit/phpunit":"^5.0",
       "codacy/coverage": "dev-master"
    },
    "autoload":{
